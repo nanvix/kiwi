@@ -12,3 +12,8 @@ kiwisolver.egg-info/
 .vscode
 .mypy_cache
 *.o
+
+.idea
+
+# clangd cache
+.cache/

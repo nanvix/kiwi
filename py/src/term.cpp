@@ -1,12 +1,12 @@
 /*-----------------------------------------------------------------------------
-| Copyright (c) 2013-2019, Nucleic Development Team.
+| Copyright (c) 2013-2026, Nucleic Development Team.
 |
 | Distributed under the terms of the Modified BSD License.
 |
 | The full license is in the file LICENSE, distributed with this software.
 |----------------------------------------------------------------------------*/
-#include <sstream>
 #include <cppy/cppy.h>
+#include <sstream>
 #include "symbolics.h"
 #include "types.h"
 #include "util.h"
@@ -78,7 +78,10 @@ Term_repr( Term* self )
 {
 	std::stringstream stream;
 	stream << self->coefficient << " * ";
-	stream << reinterpret_cast<Variable*>( self->variable )->variable.name();
+	ACQUIRE_GLOBAL_LOCK();
+	std::string name = reinterpret_cast<Variable*>( self->variable )->variable.name();
+	RELEASE_GLOBAL_LOCK();
+	stream << name;
 	return PyUnicode_FromString( stream.str().c_str() );
 }
 
@@ -101,7 +104,10 @@ PyObject*
 Term_value( Term* self )
 {
 	Variable* pyvar = reinterpret_cast<Variable*>( self->variable );
-	return PyFloat_FromDouble( self->coefficient * pyvar->variable.value() );
+	ACQUIRE_GLOBAL_LOCK();
+	double value = pyvar->variable.value();
+	RELEASE_GLOBAL_LOCK();
+	return PyFloat_FromDouble( self->coefficient * value );
 }
 
 

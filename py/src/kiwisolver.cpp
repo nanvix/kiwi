@@ -1,15 +1,22 @@
 /*-----------------------------------------------------------------------------
-| Copyright (c) 2013-2021, Nucleic Development Team.
+| Copyright (c) 2013-2026, Nucleic Development Team.
 |
 | Distributed under the terms of the Modified BSD License.
 |
 | The full license is in the file LICENSE, distributed with this software.
 |----------------------------------------------------------------------------*/
 #include <cppy/cppy.h>
+#include <mutex>
 #include <kiwi/kiwi.h>
 #include "types.h"
 #include "version.h"
 
+namespace kiwisolver
+{
+
+std::recursive_mutex global_lock;
+
+}
 
 namespace
 {
@@ -162,6 +169,9 @@ kiwisolver_methods[] = {
 
 PyModuleDef_Slot kiwisolver_slots[] = {
     {Py_mod_exec, reinterpret_cast<void*>( kiwi_modexec ) },
+#ifdef Py_GIL_DISABLED
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
     {0, NULL}
 };
 

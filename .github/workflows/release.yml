@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Get history and tags for SCM versioning to work
         run: |
           git fetch --prune --unshallow
           git fetch --depth=1 origin +refs/tags/*:refs/tags/*
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
       - name: Build sdist
@@ -34,9 +34,9 @@ jobs:
           cd ..
           pytest kiwi/py/tests -v -W error
       - name: Store artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: artifact
+          name: cibw-sdist
           path: dist/*
 
   build_wheels:
@@ -47,21 +47,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        # We build separately 3.7 and 3.8 using manylinux1
-        manylinux_version: [manylinux1, manylinux2010, manylinux2014]
+        manylinux_version: [manylinux2010, manylinux2014]
         archs: [auto]
         include:
           - os: ubuntu-latest
             archs: aarch64
-            manylinux_version: manylinux1
-          - os: ubuntu-latest
-            archs: ppc64le
-            manylinux_version: manylinux1
-          - os: ubuntu-latest
-            archs: s390x
-            manylinux_version: manylinux1
-          - os: ubuntu-latest
-            archs: aarch64
             manylinux_version: manylinux2010
           - os: ubuntu-latest
             archs: ppc64le
@@ -78,15 +68,26 @@ jobs:
           - os: ubuntu-latest
             archs: s390x
             manylinux_version: manylinux2014
+          - os: windows-latest
+            archs: ARM64
+          - os: ubuntu-latest
+            archs: auto
+            manylinux_version: graalpy
+          - os: windows-latest
+            archs: auto64
+            manylinux_version: graalpy
+          - os: macos-latest
+            archs: auto
+            manylinux_version: graalpy
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Get history and tags for SCM versioning to work
         run: |
           git fetch --prune --unshallow
           git fetch --depth=1 origin +refs/tags/*:refs/tags/*
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
       - name: Set up QEMU
@@ -97,97 +98,120 @@ jobs:
       - name: Install cibuildwheel
         run: |
           python -m pip install --upgrade pip
-          python -m pip install wheel cibuildwheel
-      - name: Build wheels
-        if: matrix.manylinux_version == 'manylinux1'
-        env:
-          CIBW_BUILD: "cp37-* cp38-*"
-          CIBW_ARCHS_MACOS: x86_64 universal2 arm64
-          CIBW_ARCHS_LINUX: ${{ matrix.archs }}
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
-          CIBW_MANYLINUX_I686_IMAGE: manylinux1
-          CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: pytest {package}/py/tests -v -W error
-          # Do not link against VC2014_1 on Windows
-          KIWI_DISABLE_FH4: 1
-        run: |
-          python -m cibuildwheel . --output-dir dist
+          python -m pip install wheel cibuildwheel==3.3.0
       - name: Build wheels
         if: matrix.manylinux_version == 'manylinux2010'
         env:
-          CIBW_BUILD: "cp39-* cp310-* pp37-* pp38-*"
+          CIBW_BUILD: "cp310-*"
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_ARCHS_LINUX: ${{ matrix.archs }}
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2010
-          CIBW_MANYLINUX_I686_IMAGE: manylinux2010
+          CIBW_ARCHS_WINDOWS: auto64
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux2010_x86_64
+          CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux2010_i686
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: python -m pytest {package}/py/tests -v
-          # Do not link against VC2014_1 on Windows
-          KIWI_DISABLE_FH4: 1
         run: |
           python -m cibuildwheel . --output-dir dist
       - name: Build wheels
         if: matrix.manylinux_version == 'manylinux2014'
         env:
-          CIBW_BUILD: "cp312-* cp311-* pp39-*"
+          CIBW_BUILD: "cp311-* cp312-* cp313-* cp313t-* cp314-* cp314t-* pp310-* pp311-*"
+          CIBW_SKIP: "cp313t-win*"
+          CIBW_ENABLE: cpython-freethreading pypy cpython-prerelease pypy-eol
           CIBW_ARCHS_MACOS: x86_64 universal2 arm64
           CIBW_ARCHS_LINUX: ${{ matrix.archs }}
+          CIBW_ARCHS_WINDOWS: auto64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_MANYLINUX_I686_IMAGE: manylinux2014
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: python -m pytest {package}/py/tests -v
-          # Do not link against VC2014_1 on Windows
-          KIWI_DISABLE_FH4: 1
+        run: |
+          python -m cibuildwheel . --output-dir dist
+      - name: Build wheels
+        if: runner.os == 'Windows' && matrix.archs == 'ARM64'
+        env:
+          CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp313t-* cp314-* cp314t-*"
+          CIBW_ENABLE: cpython-freethreading cpython-prerelease
+          CIBW_ARCHS_WINDOWS: ${{ matrix.archs }}
+          # It is not yet possible to run ARM64 tests, only cross-compile them.
+          CIBW_TEST_SKIP: "*-win_arm64"
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: python -m pytest {package}/py/tests -v
+        run: |
+          python -m cibuildwheel . --output-dir dist
+      - name: Build wheels
+        if: matrix.manylinux_version == 'graalpy'
+        env:
+          CIBW_BUILD: "gp312_250-*"
+          CIBW_ENABLE: graalpy
+          CIBW_ARCHS_MACOS: x86_64 universal2 arm64
+          CIBW_ARCHS_LINUX: auto
+          CIBW_ARCHS_WINDOWS: auto64
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: python -m pytest {package}/py/tests -v
         run: |
           python -m cibuildwheel . --output-dir dist
       - name: Store artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: artifact
+          name: cibw-wheels-${{ runner.os }}-${{ matrix.manylinux_version }}-${{ matrix.archs }}
           path: dist/*.whl
 
-  release_upload:
-    name: Create Release and Upload Release Asset
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    needs: [build_wheels, build_sdist]
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'a') || contains(github.ref, 'b')}}
-      - uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: dist
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: shogo82148/actions-upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/*
-
-  upload_pypi:
+  publish:
     if: github.event_name == 'push'
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/kiwisolver
+    permissions:
+      id-token: write
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4.1.7
         with:
-          name: artifact
+          pattern: cibw-*
           path: dist
+          merge-multiple: true
 
-      - uses: pypa/gh-action-pypi-publish@master
-        with:
-          user: __token__
-          password: ${{ secrets.pypi_password }}
-          # To test:
-          # repository_url: https://test.pypi.org/legacy/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: >-
+      Sign the Python 🐍 distribution 📦 with Sigstore
+      and create a GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+    - publish
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4.1.7
+      with:
+        pattern: cibw-*
+        path: dist
+        merge-multiple: true
+    - name: Sign the dists with Sigstore
+      uses: sigstore/gh-action-sigstore-python@v3.0.1
+      with:
+        inputs: >-
+          ./dist/*.tar.gz
+          ./dist/*.whl
+    - name: Create GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create
+        '${{ github.ref_name }}'
+        --repo '${{ github.repository }}'
+        --generate-notes
+    - name: Upload artifact signatures to GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: >-
+        gh release upload
+        '${{ github.ref_name }}' dist/**
+        --repo '${{ github.repository }}'

@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------------------
-# Copyright (c) 2014-2021, Nucleic Development Team.
+# Copyright (c) 2014-2024,, Nucleic Development Team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -61,7 +61,7 @@ def expressions():
 
 
 def test_expression_neg(
-    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable]
+    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable],
 ):
     """Test neg on an expression."""
     e, _, _, _, v, _ = expressions
@@ -78,7 +78,7 @@ def test_expression_neg(
 
 
 def test_expression_mul(
-    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable]
+    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable],
 ):
     """Test expresion multiplication."""
     e, _, _, _, v, _ = expressions
@@ -98,7 +98,7 @@ def test_expression_mul(
 
 
 def test_expression_div(
-    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable]
+    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable],
 ):
     """Test expression divisions."""
     e, _, _, _, v, v2 = expressions
@@ -121,7 +121,7 @@ def test_expression_div(
 
 
 def test_expression_addition(
-    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable]
+    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable],
 ):
     """Test expressions additions."""
     e, e2, _, t2, v, v2 = expressions
@@ -174,7 +174,7 @@ def test_expression_addition(
 
 
 def test_expressions_substraction(
-    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable]
+    expressions: Tuple[Expression, Expression, Term, Term, Variable, Variable],
 ):
     """Test expression substraction."""
     e, e2, _, t2, v, v2 = expressions

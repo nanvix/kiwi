@@ -1,6 +1,28 @@
 Kiwi Release Notes
 ==================
 
+Wrappers 1.4.9 | Solver 1.4.2 | 10/08/2025
+------------------------------------------
+- add support for Python 3.14 PR #196 #198
+- include Python.h, or headers including Python.h, before system headers
+
+Wrappers 1.4.8 | Solver 1.4.2 | 24/12/2024
+------------------------------------------
+- drop support for Python 3.8 and 3.9 PR #189
+- do not link to MSVCP on Windows and drop windows 32 bits support PR #189
+- add support for free-threaded builds on Python 3.13 PR #190 #191
+
+Wrappers 1.4.7 | Solver 1.4.2 | 03/09/2024
+------------------------------------------
+- no library changes only fixes to the build infrastructure
+
+Wrappers 1.4.6 | Solver 1.4.2 | 03/09/2024
+------------------------------------------
+- drop support for Python 3.7 PR #183
+- add support for Python 3.13 PR #183
+- update linking strategy on Windows when building wheels PR #183
+  This is in line with Matplotlib strategy https://github.com/matplotlib/matplotlib/pull/28687
+
 Wrappers 1.4.5 | Solver 1.4.2 | 24/08/2023
 ------------------------------------------
 - implement exceptions in Python PR #162
