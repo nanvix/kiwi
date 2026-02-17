@@ -95,4 +95,11 @@ install: $(STATICLIB)
 clean:
 	rm -f *.o $(STATICLIB)
 
-.PHONY: all clean install
+test: $(STATICLIB)
+	@echo "Running kiwisolver tests..."
+	@test -f $(STATICLIB) && echo "  OK: $(STATICLIB) exists" || (echo "  FAIL: $(STATICLIB) not found" && exit 1)
+	@$(NANVIX_TOOLCHAIN)/bin/i686-nanvix-ar -t $(STATICLIB) | grep -q kiwisolver.o && echo "  OK: kiwisolver.o in archive" || (echo "  FAIL: kiwisolver.o not in archive" && exit 1)
+	@$(NANVIX_TOOLCHAIN)/bin/i686-nanvix-nm $(STATICLIB) | grep -q PyInit__cext && echo "  OK: PyInit__cext symbol found" || (echo "  FAIL: PyInit__cext not found" && exit 1)
+	@echo "\t\t*** kiwisolver tests PASSED ***"
+
+.PHONY: all clean install test
